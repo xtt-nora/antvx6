@@ -369,16 +369,33 @@ function zoom(graph: Graph, delta: number) {
     const newYMax = coordinate.yMax * scaleFactor;
     //所有节点
     const nodes = graph.getNodes()
-    console.log(nodes,'nodes')
+
+    const cells = graph.getCells()
+  //   .map(cell => ({
+  //   id: cell.id,
+  //   shape: cell.shape,
+  //   type: cell.isNode() ? 'node' : 'edge',
+  //   position: cell.isNode() ? cell.getPosition() : null,
+  //   source: cell.isEdge() ? cell.getSource() : null,
+  //   target: cell.isEdge() ? cell.getTarget() : null,
+  //   size: cell.isNode() ? cell.getSize() : null,
+  //   attrs: cell.attrs,
+  // }));
+    console.log(cells,'cells')
    let notCoorList = []
-  nodes.filter(ele=>{
+   let isEdgeList = []
+   cells.filter(ele=>{
       const coor = ele.getProp('coor')
       console.log(coor,'coor')
       if(coor !== 'yes'){
-        notCoorList.push(ele)
+        if(ele.isNode()){
+          notCoorList.push(ele)
+        }else{
+          isEdgeList.push(ele)
+        }
       }
     })
-    console.log(notCoorList)
+    console.log(notCoorList,isEdgeList,'notCoorList')
      graph.clearCells();
   coordinate.xMax = newXMax;
   coordinate.yMax = newYMax;
@@ -399,6 +416,13 @@ const yNewRatio = graph.options.height / newXMax;
       width: node.width,
       height: node.height,
       attrs: node.attrs,
+    })
+  })
+  isEdgeList.forEach(edge =>{
+    graph.addEdge({
+      source: { cell: edge.store.data.source.cell },
+      target: { cell: edge.store.data.target.cell },
+      attrs: edge.attrs
     })
   })
 }
