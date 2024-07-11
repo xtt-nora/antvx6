@@ -23,6 +23,8 @@ const graphContainer = ref<HTMLElement | null>(null);
   let coordinate = new Coordinate()
   let nodeEdge = new NodeEdge()
   let graphValue: Graph;
+  let polygon: { x: number, y: number }[];
+  let list:[];
 onMounted(()=>{
   init()
 })
@@ -108,6 +110,61 @@ graph
 
   initNode(graph,stencil)
   keyBoard(graph)
+
+  // graph.on('node:moved', ({e, x, y, node }) => {
+  //   const originalPosition = node.getProp('originalPosition');
+  //   console.log(e,node,'e')
+  //   const pos = node.position();
+  //   const dx = x-pos.x;
+  //   const dy = y-pos.y;
+  //   console.log(dx,dy,'pos')
+  //   const newX =x;
+  //   const newY = y;
+  //   const isInRestrictedArea = nodeEdge.isPointInPolygon({ x: newX, y: newY });
+  //   if (!isInRestrictedArea) {
+  //     if (originalPosition) {
+  //       node.position(originalPosition.x, originalPosition.y);
+  //     }
+  //   } else {
+  //     node.setProp('originalPosition', pos);
+  //   }
+  //   // const isInRestrictedAreatop = nodeEdge.isPointInPolygon({ x: newX, y: newY - height });
+  //   // const isInRestrictedAreabottom = nodeEdge.isPointInPolygon({ x: newX, y: newY + height });
+  //   // if (!isInRestrictedArea) {
+  //   //   // pos.x  -= dx;
+  //   //   // pos.y  -= dy;
+  //   //   console.log(pos.x,pos.x -= dx,pos.y)
+  //   //   node.position(pos.x -= dx,pos.y -= dy)
+  //   // }
+  // });
+
+  graph.on('node:moved', ({ node }) => {
+    const originalPosition = node.getProp('originalPosition');
+    const pos = node.position();
+    let po  = []
+    const { x, y, height } = node.getBBox();
+    // console.log(list,'list.value')
+    if(list){
+      po = list.filter(node=>node.getProp('initType'))
+      console.log(po,'po')
+     polygon = po.map(node => {
+            const pos = node.position();
+            return { x: pos.x, y: pos.y };
+      });
+    }
+// console.log(polygon,'polygon')
+    const isInRestrictedArea = nodeEdge.isPointInPolygon({ x, y },polygon);
+    const isInRestrictedAreaTop = nodeEdge.isPointInPolygon({ x, y: y - height },polygon);
+    const isInRestrictedAreaBottom = nodeEdge.isPointInPolygon({ x, y: y + height },polygon);
+
+    if (!isInRestrictedArea && !isInRestrictedAreaTop && !isInRestrictedAreaBottom) {
+      if (originalPosition) {
+        node.position(originalPosition.x, originalPosition.y);
+      }
+    } else {
+      node.setProp('originalPosition', pos);
+    }
+  });
   graphContainer.value.addEventListener('wheel', (event) => {
   event.preventDefault();
   zoom(graphValue, event.deltaY);
@@ -361,7 +418,7 @@ function handle(e: any) {
 }
 function zoom(graph: Graph, delta: number) {
     const scaleFactor = delta > 0 ? 1.1 : 0.9;
-    console.log(coordinate.xMax,coordinate.yMax,graph)
+    // console.log(coordinate.xMax,coordinate.yMax,graph)
     const xRatio = graph.options.width / coordinate.xMax;
     const yRatio = graph.options.height / coordinate.yMax;
     //新的坐标轴最大值
@@ -395,7 +452,7 @@ function zoom(graph: Graph, delta: number) {
         }
       }
     })
-    console.log(notCoorList,isEdgeList,'notCoorList')
+    // console.log(notCoorList,isEdgeList,'notCoorList')
      graph.clearCells();
   coordinate.xMax = newXMax;
   coordinate.yMax = newYMax;
@@ -407,17 +464,19 @@ const yNewRatio = graph.options.height / newXMax;
     const orginY =node.position().y / yRatio
     const newX = orginX * xNewRatio
     const newY = orginY * yNewRatio
-
-    graph.addNode({
-      id: node.id,
-      shape: node.shape,
-      x: newX,
-      y: newY,
-      width: node.width,
-      height: node.height,
-      attrs: node.attrs,
-    })
+    //  graph.addNode({
+    //   id: node.id,
+    //   shape: node.shape,
+    //   x: newX,
+    //   y: newY,
+    //   width: node.width,
+    //   height: node.height,
+    //   attrs: node.attrs,
+    // })
+    node.position(newX,newY)
   })
+  graph.addNodes(notCoorList)
+  list = notCoorList
   isEdgeList.forEach(edge =>{
     graph.addEdge({
       source: { cell: edge.store.data.source.cell },
@@ -425,7 +484,10 @@ const yNewRatio = graph.options.height / newXMax;
       attrs: edge.attrs
     })
   })
+
 }
+
+
 </script>
 <style scoped>
   #stencil {

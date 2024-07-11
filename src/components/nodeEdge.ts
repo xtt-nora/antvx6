@@ -4,6 +4,7 @@ import { alldata } from "./allData.json"
 import { xml2json } from 'xml-js';
 class NodeEdge extends Coordinate {
    restrictedAreaCoordinates:  [] = [];
+   polygonPoints: { x: number; y: number }[] = [];
    dataList = {
    "point": [],
    "to":[]
@@ -46,6 +47,7 @@ tools: [
 ]
 })
   items.setProp('isMove','yes')
+  items.setProp('initType','vertex')
   this.restrictedAreaCoordinates.push(items)
   parentNodes.push(items);
 }else{
@@ -91,6 +93,25 @@ for (let i = 0; i < this.restrictedAreaCoordinates.length - 1; i++) {
       }
   });
 }
+this.polygonPoints = this.restrictedAreaCoordinates.map(node => {
+  console.log(this.restrictedAreaCoordinates,'this.restrictedAreaCoordinates')
+  const pos = node.position();
+  return { x: pos.x, y: pos.y };
+});
+  }
+   // 用于检查点是否在多边形内部的函数
+   isPointInPolygon(point: { x: number; y: number }, polygon: { x: number, y: number }[] = this.polygonPoints): boolean {
+    let isInside = false;
+    const { x, y } = point;
+    const points = polygon;
+    console.log(points,'points')
+    for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+      const xi = points[i].x, yi = points[i].y;
+      const xj = points[j].x, yj = points[j].y;
+      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) isInside = !isInside;
+    }
+    return isInside;
   }
   handle(e: { target: { files: any[]; }; },graph:Graph){
     let file = e.target.files[0];
